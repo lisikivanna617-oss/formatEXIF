@@ -56,8 +56,7 @@ async def extract_exif(message: Message):
         
         # Відкриваємо зображення через Pillow
         image = Image.open(file_path)
-        
-        # Базова інформація про файл (яка є завжди, навіть якщо EXIF вирізано)
+                # Базова інформація про файл (яка є завжди, навіть якщо EXIF вирізано)
         width, height = image.size
         img_format = image.format
         img_mode = image.mode
