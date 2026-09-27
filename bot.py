@@ -54,13 +54,16 @@ async def extract_exif(message: Message):
         file = await bot.get_file(file_id)
         await bot.download_file(file.file_path, destination=file_path)
         
-        # Відкриваємо зображення через Pillow
-        image = Image.open(file_path)
-                # Базова інформація про файл (яка є завжди, навіть якщо EXIF вирізано)
+                # Базова інформація про файл
         width, height = image.size
-        img_format = image.format
         img_mode = image.mode
         file_size_kb = round(os.path.getsize(file_path) / 1024, 2)
+        
+        # Визначаємо реальний формат з урахуванням розширення файлу
+        _, file_extension = os.path.splitext(file_path)
+        img_format = file_extension.lstrip('.').upper() if file_extension else image.format
+        if img_format == 'JPG': 
+            img_format = 'JPEG' # робимо уніфіковано або навпаки
         
         report = [
             "📊 **IMAGE ANALYSIS REPORT**",
