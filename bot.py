@@ -40,7 +40,6 @@ FONTS = {
     }
 }
 
-# Зберігаємо обраний шрифт для користувача (за замовчуванням impact)
 user_fonts = {}
 
 @dp.message(CommandStart())
@@ -108,7 +107,6 @@ async def generate_meme(message: Message):
         draw = ImageDraw.Draw(img)
         width, height = img.size
         
-        # Визначаємо обраний шрифт користувача (за замовчуванням impact)
         user_choice = user_fonts.get(message.from_user.id, "impact")
         font_paths = FONTS[user_choice]["paths"]
         
@@ -134,13 +132,46 @@ async def generate_meme(message: Message):
                         draw.text((x + adj_x, y + adj_y), text, font=font, fill="black", anchor="mm", align="center")
             draw.text((x, y), text, font=font, fill="white", anchor="mm", align="center")
 
-        if top_text:Помилка у логах деплою на Railway (`formatEXIF`) виникає через те, що у файлі `bot.py` на 7-му рядку код намагається імпортувати неіснуючий клас чи тип `FleshedOut` із бібліотеки `aiogram.types`.
-
-### Як вирішити цю проблему:
-
-* **Перевірте рядок 7 у `bot.py`:** Знайдіть рядок, де імпортуються класи з `aiogram.types` (серед них має бути `FleshedOut`).
-* **Видаліть неіснуючий імпорт:** У бібліотеці `aiogram` немає вбудованого об'єкта або типу з назвою `FleshedOut`. Просто приберіть його зі списку імпорту.
-* **Якщо це ваш кастомний клас:** Якщо `FleshedOut` — це назва вашого власного класу чи утиліти, переконайтеся, що ви імпортуєте його з локального файлу вашого проєкту (наприклад, `from .handlers import ...` або `from utils import ...`), а не з бібліотеки `aiogram`.
-
-Після внесення виправлень та збереження змін у репозиторії GitHub, Railway автоматично запустить новий білд і бот успішно відновить роботу.
+        if top_text:
+            draw_text_with_outline((width / 2, height * 0.12), top_text, font, draw)
+            
+        if bottom_text:
+            draw_text_with_outline((width / 2, height * 0.88), bottom_text, font, draw)
+            
+        img.save(output_path)
         
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Make another", callback_data="font_impact")]
+        ])
+        
+        with open(output_path, "rb") as meme_file:
+            input_file = BufferedInputFile(meme_file.read(), filename="meme.jpg")
+            await message.answer_photo(
+                photo=input_file,
+                caption="✅ **Meme generated successfully!**",
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+            
+        await status_msg.delete()
+        
+    except Exception as e:
+        logging.error(f"Meme Error: {e}")
+        await status_msg.edit_text("❌ **Error:** Could not process this image.")
+        
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+async def main():
+    logging.basicConfig(level=logging.INFO)
+    print("Meme Generator Bot with Fonts is online!")
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    asyncio.run(main())
+    
