@@ -16,14 +16,14 @@ dp = Dispatcher()
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
     welcome_text = (
-        "🔍 **EXIF METADATA EXTRACTOR**\n"
+        "🔍 **IMAGE INSPECTOR ENGINE**\n"
         "━━━━━━━━━━━━━━━━━━━\n"
-        "✨ *Uncover hidden details behind any image.*\n\n"
-        "📷 **What I can extract:**\n"
-        "• Camera model & Lens details\n"
-        "• Exposure settings (ISO, Shutter, Aperture)\n"
-        "• Date, Time & GPS coordinates (if available)\n\n"
-        "👉 *Just send any photo as a file (uncompressed) to inspect its EXIF data!*"
+        "✨ *Analyze image properties & metadata.*\n\n"
+        "📷 **What I check:**\n"
+        "• Resolution & File Format\n"
+        "• Color Mode & Dimensions\n"
+        "• Available EXIF Tags (Camera, ISO, Lens)\n\n"
+        "👉 *Just send any photo from your gallery or as a file!*"
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -34,16 +34,15 @@ async def cmd_start(message: Message):
 
 @dp.callback_query(F.data == "help_exif")
 async def callback_help(callback: CallbackQuery):
-    await callback.answer("Send photo as a document or uncompressed image to read metadata!", show_alert=True)
+    await callback.answer("Just send any image from your gallery or chat!", show_alert=True)
 
 @dp.message(F.photo | F.document)
 async def extract_exif(message: Message):
-    status_msg = await message.answer("🔄 **Downloading and reading EXIF data...**", parse_mode="Markdown")
+    status_msg = await message.answer("🔄 **Analyzing image data...**", parse_mode="Markdown")
     
     file_path = f"temp_{message.from_user.id}.jpg"
     
     try:
-        # Визначаємо файл (фото чи документ)
         if message.photo:
             file_id = message.photo[-1].file_id
         else:
@@ -55,29 +54,45 @@ async def extract_exif(message: Message):
         file = await bot.get_file(file_id)
         await bot.download_file(file.file_path, destination=file_path)
         
-        # Відкриваємо зображення через Pillow і дістаємо EXIF
+        # Відкриваємо зображення через Pillow
         image = Image.open(file_path)
-        exif_data = image.getexif()
         
-        if not exif_data:
-            await status_msg.edit_text("⚠️ **No EXIF data found** in this image (metadata might have been stripped).")
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            return
+        # Базова інформація про файл (яка є завжди, навіть якщо EXIF вирізано)
+        width, height = image.size
+        img_format = image.format
+        img_mode = image.mode
+        file_size_kb = round(os.path.getsize(file_path) / 1024, 2)
+        
+        report = [
+            "📊 **IMAGE ANALYSIS REPORT**",
+            "━━━━━━━━━━━━━━━━━━━",
+            f"• **Format**: `{img_format}`",
+            f"• **Resolution**: `{width}x{height} px`",
+            f"• **Color Mode**: `{img_mode}`",
+            f"• **File Size**: `{file_size_kb} KB`",
+            "━━━━━━━━━━━━━━━━━━━",
+            "📷 **EXIF Tags:**"
+        ]
+        
+        # Намагаємося витягнути EXIF, якщо він є
+        exif_data = image.getexif()
+        found_exif = False
+        
+        if exif_data:
+            for tag_id, value in exif_data.items():
+                tag = TAGS.get(tag_id, tag_id)
+                if isinstance(value, bytes):
+                    try:
+                        value = value.decode(errors='ignore')
+                    except:
+                        value = "<binary data>"
+                report.append(f"• **{tag}**: `{value}`")
+                found_exif = True
+                
+        if not found_exif:
+            report.append("ℹ️ *No deep EXIF tags found (compressed by messenger or screenshot).*")
             
-        exif_info = []
-        for tag_id, value in exif_data.items():
-            tag = TAGS.get(tag_id, tag_id)
-            # Фільтруємо занадто великі бінарні дані
-            if isinstance(value, bytes):
-                try:
-                    value = value.decode(errors='ignore')
-                except:
-                    value = "<binary data>"
-            exif_info.append(f"• **{tag}**: `{value}`")
-            
-        # Форматуємо результат (обмежуємо довжину, щоб не перевищити ліміт Telegram)
-        result_text = "📊 **EXIF METADATA REPORT**\n━━━━━━━━━━━━━━━━━━━\n" + "\n".join(exif_info[:25])
+        result_text = "\n".join(report[:25])
         
         done_keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🔄 Analyze another", callback_data="help_exif")]
@@ -86,8 +101,8 @@ async def extract_exif(message: Message):
         await status_msg.edit_text(result_text, reply_markup=done_keyboard, parse_mode="Markdown")
         
     except Exception as e:
-        logging.error(f"EXIF Error: {e}")
-        await status_msg.edit_text("❌ **Error:** Could not process image metadata.")
+        logging.error(f"Image Analysis Error: {e}")
+        await status_msg.edit_text("❌ **Error:** Could not process this image.")
         
     finally:
         if os.path.exists(file_path):
@@ -95,7 +110,7 @@ async def extract_exif(message: Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("EXIF Bot is online!")
+    print("EXIF & Image Info Bot is online!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
