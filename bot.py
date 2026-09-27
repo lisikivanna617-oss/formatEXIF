@@ -4,7 +4,7 @@ import os
 import sys
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
-from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, FleshedOut
+from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.getenv("BOT_TOKEN")
@@ -12,7 +12,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Словник доступних шрифтів (шляхи для Linux/Railway та можливі fallback варіанти)
+# Словник доступних шрифтів (шляхи для Linux/Railway та fallback варіанти)
 FONTS = {
     "impact": {
         "name": "🔥 Impact (Classic)",
@@ -40,7 +40,7 @@ FONTS = {
     }
 }
 
-# Зберігаємо тимчасово обраний шрифт для користувача (за замовчуванням impact)
+# Зберігаємо обраний шрифт для користувача (за замовчуванням impact)
 user_fonts = {}
 
 @dp.message(CommandStart())
@@ -127,57 +127,20 @@ async def generate_meme(message: Message):
 
         def draw_text_with_outline(xy, text, font, draw):
             x, y = xy
-            # Товсте чорне обведення для класичного стилю мему
             outline_range = max(int(font_size / 12), 2)
             for adj_x in range(-outline_range, outline_range + 1):
                 for adj_y in range(-outline_range, outline_range + 1):
                     if adj_x != 0 or adj_y != 0:
                         draw.text((x + adj_x, y + adj_y), text, font=font, fill="black", anchor="mm", align="center")
-            # Білий текст поверх обведення
             draw.text((x, y), text, font=font, fill="white", anchor="mm", align="center")
 
-        # Малюємо верхній текст
-        if top_text:
-            draw_text_with_outline((width / 2, height * 0.12), top_text, font, draw)
-            
-        # Малюємо нижній текст
-        if bottom_text:
-            draw_text_with_outline((width / 2, height * 0.88), bottom_text, font, draw)
-            
-        img.save(output_path)
-        
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔄 Make another", callback_data="font_impact")]
-        ])
-        
-        with open(output_path, "rb") as meme_file:
-            input_file = BufferedInputFile(meme_file.read(), filename="meme.jpg")
-            await message.answer_photo(
-                photo=input_file,
-                caption="✅ **Meme generated successfully!**",
-                reply_markup=keyboard,
-                parse_mode="Markdown"
-            )
-            
-        await status_msg.delete()
-        
-    except Exception as e:
-        logging.error(f"Meme Error: {e}")
-        await status_msg.edit_text("❌ **Error:** Could not process this image.")
-        
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        if os.path.exists(output_path):
-            os.remove(output_path)
+        if top_text:Помилка у логах деплою на Railway (`formatEXIF`) виникає через те, що у файлі `bot.py` на 7-му рядку код намагається імпортувати неіснуючий клас чи тип `FleshedOut` із бібліотеки `aiogram.types`.
 
-async def main():
-    logging.basicConfig(level=logging.INFO)
-    print("Meme Generator Bot with Fonts is online!")
-    await dp.start_polling(bot)
+### Як вирішити цю проблему:
 
-if __name__ == "__main__":
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(main())
-    
+* **Перевірте рядок 7 у `bot.py`:** Знайдіть рядок, де імпортуються класи з `aiogram.types` (серед них має бути `FleshedOut`).
+* **Видаліть неіснуючий імпорт:** У бібліотеці `aiogram` немає вбудованого об'єкта або типу з назвою `FleshedOut`. Просто приберіть його зі списку імпорту.
+* **Якщо це ваш кастомний клас:** Якщо `FleshedOut` — це назва вашого власного класу чи утиліти, переконайтеся, що ви імпортуєте його з локального файлу вашого проєкту (наприклад, `from .handlers import ...` або `from utils import ...`), а не з бібліотеки `aiogram`.
+
+Після внесення виправлень та збереження змін у репозиторії GitHub, Railway автоматично запустить новий білд і бот успішно відновить роботу.
+        
