@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import sys
-import urllib.request
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
@@ -13,52 +12,36 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Використовуємо шрифти, що гарантовано підтримують кирилицю
-FONT_URLS = {
-    "impact": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Black.ttf", # Робимо Roboto-Black як надійну заміну для Impact з кирилицею
-    "comic": "https://github.com/google/fonts/raw/main/ofl/comicsansms/ComicSansMS.ttf",
-    "arial": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf"
-}
-
-async def ensure_fonts():
-    os.makedirs("fonts", exist_ok=True)
-    for name, url in FONT_URLS.items():
-        path = f"fonts/{name}.ttf"
-        if not os.path.exists(path):
-            try:
-                urllib.request.urlretrieve(url, path)
-            except Exception as e:
-                logging.error(f"Failed to download font {name}: {e}")
-
+# Локалізація (4 мови)
 LANGS = {
     "en": {
         "title": "⚡ MEME GENERATOR ENGINE",
-        "desc": "✨ Create classic memes with custom fonts.",
-        "step1": "1. Choose your language & font below.",
+        "desc": "✨ Create classic memes with system fonts.",
+        "step1": "1. Choose your language below.",
         "step2": "2. Send an image with caption: `Top text | Bottom text`",
         "success": "✅ Meme generated successfully!",
         "err": "❌ Error processing image."
     },
     "uk": {
         "title": "⚡ ГЕНЕРАТОР МЕМІВ",
-        "desc": "✨ Створюй класичні меми зі шрифтами, що підтримують кирилицю.",
-        "step1": "1. Обери мову та шрифт нижче.",
+        "desc": "✨ Створюй класичні меми з підтримкою кирилиці.",
+        "step1": "1. Обери мову нижче.",
         "step2": "2. Надішли фото з підписом: `Верхній текст | Нижній текст`",
         "success": "✅ Мем успішно створено!",
         "err": "❌ Помилка обробки зображення."
     },
     "ru": {
         "title": "⚡ ГЕНЕРАТОР МЕМОВ",
-        "desc": "✨ Создавай классические мемы со шрифтами с поддержкой кириллицы.",
-        "step1": "1. Выбери язык и шрифт ниже.",
-        "step2": "2. Отправь фото с подписью: `Верхний текст | Нижній текст`",
+        "desc": "✨ Создавай классические мемы с поддержкой кириллицы.",
+        "step1": "1. Выбери язык ниже.",
+        "step2": "2. Отправь фото с подписью: `Верхний текст | Нижний текст`",
         "success": "✅ Мем успешно создан!",
         "err": "❌ Ошибка обработки изображения."
     },
     "pl": {
         "title": "⚡ GENERATOR MEMÓW",
-        "desc": "✨ Twórz klasyczne memy z obsługą czcionek.",
-        "step1": "1. Wybierz język i czcionkę poniżej.",
+        "desc": "✨ Twórz klasyczne memy z polskimi znakami.",
+        "step1": "1. Wybierz język poniżej.",
         "step2": "2. Wyślij zdjęcie z podpisem: `Tekst górny | Tekst dolny`",
         "success": "✅ Mem został utworzony!",
         "err": "❌ Błąd przetwarzania obrazu."
@@ -68,15 +51,10 @@ LANGS = {
 user_prefs = {}
 
 def get_pref(user_id):
-    return user_prefs.setdefault(user_id, {"lang": "en", "font": "impact"})
+    return user_prefs.setdefault(user_id, {"lang": "en"})
 
 def get_main_keyboard(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🔥 Bold", callback_data="f_impact"),
-            InlineKeyboardButton(text="😜 Comic", callback_data="f_comic"),
-            InlineKeyboardButton(text="📌 Roboto", callback_data="f_arial")
-        ],
         [
             InlineKeyboardButton(text="🇬🇧 EN", callback_data="l_en"),
             InlineKeyboardButton(text="🇺🇦 UA", callback_data="l_uk"),
@@ -91,13 +69,6 @@ async def cmd_start(message: Message):
     t = LANGS[pref["lang"]]
     text = f"**{t['title']}**\n━━━━━━━━━━━━━━━━━━━\n{t['desc']}\n\n📝 **Guide:**\n{t['step1']}\n{t['step2']}\n\n👉 *Send a photo now!*"
     await message.answer(text, reply_markup=get_main_keyboard(pref["lang"]), parse_mode="Markdown")
-
-@dp.callback_query(F.data.startswith("f_"))
-async def change_font(callback: CallbackQuery):
-    font_name = callback.data.split("_")[1]
-    pref = get_pref(callback.from_user.id)
-    pref["font"] = font_name
-    await callback.answer(f"Font changed!", show_alert=True)
 
 @dp.callback_query(F.data.startswith("l_"))
 async def change_lang(callback: CallbackQuery):
@@ -139,13 +110,25 @@ async def generate_meme(message: Message):
         draw = ImageDraw.Draw(img)
         width, height = img.size
         
-        font_path = f"fonts/{pref['font']}.ttf"
         font_size = max(int(height / 10), 20)
         
-        # Спроба завантажити кастомний шрифт, з fallback на системний дефолтний
-        try:
-            font = ImageFont.truetype(font_path, font_size)
-        except:
+        # Використовуємо гарантований системний шрифт Linux із підтримкою кирилиці
+        font = None
+        system_fonts = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+        ]
+        
+        for f_path in system_fonts:
+            if os.path.exists(f_path):
+                try:
+                    font = ImageFont.truetype(f_path, font_size)
+                    break
+                except:
+                    continue
+                    
+        if not font:
             font = ImageFont.load_default()
 
         def draw_text_with_outline(xy, text, font, draw):
@@ -186,12 +169,11 @@ async def generate_meme(message: Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    await ensure_fonts()
-    print("Meme Generator Bot is fully loaded & online!")
+    print("Meme Generator Bot is online!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(main())
-                                   
+        
