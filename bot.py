@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+import urllib.request
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
@@ -12,79 +13,119 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Словник доступних шрифтів (шляхи для Linux/Railway та fallback варіанти)
-FONTS = {
-    "impact": {
-        "name": "🔥 Impact (Classic)",
-        "paths": [
-            "/usr/share/fonts/truetype/msttcorefonts/Impact.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "impact.ttf"
-        ]
+# Автоматичне завантаження справжніх шрифтів, якщо їх немає в системі
+FONT_URLS = {
+    "impact": "https://github.com/google/fonts/raw/main/apache/impact/Impact.ttf",
+    "comic": "https://github.com/google/fonts/raw/main/ofl/comicsansms/ComicSansMS.ttf",
+    "arial": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Black.ttf"
+}
+
+async def ensure_fonts():
+    os.makedirs("fonts", exist_ok=True)
+    for name, url in FONT_URLS.items():
+        path = f"fonts/{name}.ttf"
+        if not os.path.exists(path):
+            try:
+                urllib.request.urlretrieve(url, path)
+            except Exception as e:
+                logging.error(f"Failed to download font {name}: {e}")
+
+# Локалізація (4 мови)
+LANGS = {
+    "en": {
+        "title": "⚡ MEME GENERATOR ENGINE",
+        "desc": "✨ Create classic memes with real fonts.",
+        "step1": "1. Choose your language & font below.",
+        "step2": "2. Send an image with caption: `Top text | Bottom text`",
+        "success": "✅ Meme generated successfully!",
+        "btn_font": "🔤 Font",
+        "btn_lang": "🌐 Lang",
+        "err": "❌ Error processing image."
     },
-    "arial": {
-        "name": "📌 Arial Bold",
-        "paths": [
-            "/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "arial.ttf"
-        ]
+    "uk": {
+        "title": "⚡ ГЕНЕРАТОР МЕМІВ",
+        "desc": "✨ Створюй класичні меми зі справжніми шрифтами.",
+        "step1": "1. Обери мову та шрифт нижче.",
+        "step2": "2. Надішли фото з підписом: `Верхній текст | Нижній текст`",
+        "success": "✅ Мем успішно створено!",
+        "btn_font": "🔤 Шрифт",
+        "btn_lang": "🌐 Мова",
+        "err": "❌ Поשлка обробки зображення."
     },
-    "comic": {
-        "name": "😜 Comic Sans",
-        "paths": [
-            "/usr/share/fonts/truetype/msttcorefonts/Comic_Sans_MS.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "comic.ttf"
-        ]
+    "ru": {
+        "title": "⚡ ГЕНЕРАТОР МЕМОВ",
+        "desc": "✨ Создавай классические мемы с реальными шрифтами.",
+        "step1": "1. Выбери язык и шрифт ниже.",
+        "step2": "2. Отправь фото с подписью: `Верхний текст | Нижний текст`",
+        "success": "✅ Мем успешно создан!",
+        "btn_font": "🔤 Шрифт",
+        "btn_lang": "🌐 Язык",
+        "err": "❌ Ошибка обработки изображения."
+    },
+    "pl": {
+        "title": "⚡ GENERATOR MEMÓW",
+        "desc": "✨ Twórz klasyczne memy z prawdziwymi czcionkami.",
+        "step1": "1. Wybierz język i czcionkę poniżej.",
+        "step2": "2. Wyślij zdjęcie z podpisem: `Tekst górny | Tekst dolny`",
+        "success": "✅ Mem został utworzony!",
+        "btn_font": "🔤 Czcionka",
+        "btn_lang": "🌐 Język",
+        "err": "❌ Błąd przetwarzania obrazu."
     }
 }
 
-user_fonts = {}
+user_prefs = {} # {user_id: {"lang": "uk", "font": "impact"}}
+
+def get_pref(user_id):
+    return user_prefs.setdefault(user_id, {"lang": "en", "font": "impact"})
+
+def get_main_keyboard(lang):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔥 Impact", callback_data="f_impact"),
+            InlineKeyboardButton(text="😜 Comic", callback_data="f_comic"),
+            InlineKeyboardButton(text="📌 Roboto", callback_data="f_arial")
+        ],
+        [
+            InlineKeyboardButton(text="🇬🇧 EN", callback_data="l_en"),
+            InlineKeyboardButton(text="🇺🇦 UA", callback_data="l_uk"),
+            InlineKeyboardButton(text="🇷🇺 RU", callback_data="l_ru"),
+            InlineKeyboardButton(text="🇵🇱 PL", callback_data="l_pl")
+        ]
+    ])
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
-    welcome_text = (
-        "⚡ **MEME GENERATOR ENGINE**\n"
-        "━━━━━━━━━━━━━━━━━━━\n"
-        "✨ *Create classic memes with custom fonts.*\n\n"
-        "📝 **How to use:**\n"
-        "1. Select your preferred font below.\n"
-        "2. Send an image with caption: `Top text | Bottom text`\n"
-        "3. Get your styled meme instantly!\n\n"
-        "👉 *Choose a font to get started:*"
-    )
+    pref = get_pref(message.from_user.id)
+    t = LANGS[pref["lang"]]
     
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🔥 Impact", callback_data="font_impact"),
-            InlineKeyboardButton(text="📌 Arial", callback_data="font_arial"),
-            InlineKeyboardButton(text="😜 Comic", callback_data="font_comic")
-        ]
-    ])
-    
-    await message.answer(welcome_text, reply_markup=keyboard, parse_mode="Markdown")
+    text = f"**{t['title']}**\n━━━━━━━━━━━━━━━━━━━\n{t['desc']}\n\n📝 **Guide:**\n{t['step1']}\n{t['step2']}\n\n👉 *Send a photo now!*"
+    await message.answer(text, reply_markup=get_main_keyboard(pref["lang"]), parse_mode="Markdown")
 
-@dp.callback_query(F.data.startswith("font_"))
-async def set_user_font(callback: CallbackQuery):
-    font_key = callback.data.split("_")[1]
-    user_fonts[callback.from_user.id] = font_key
+@dp.callback_query(F.data.startswith("f_"))
+async def change_font(callback: CallbackQuery):
+    font_name = callback.data.split("_")[1]
+    pref = get_pref(callback.from_user.id)
+    pref["font"] = font_name
+    await callback.answer(f"Font changed to {font_name.upper()}!", show_alert=True)
+
+@dp.callback_query(F.data.startswith("l_"))
+async def change_lang(callback: CallbackQuery):
+    lang_code = callback.data.split("_")[1]
+    pref = get_pref(callback.from_user.id)
+    pref["lang"] = lang_code
     
-    font_name = FONTS[font_key]["name"]
-    await callback.answer(f"Font changed to {font_name}!", show_alert=True)
-    
-    await callback.message.edit_text(
-        f"⚡ **MEME GENERATOR ENGINE**\n"
-        f"━━━━━━━━━━━━━━━━━━━\n"
-        f"✨ *Active font:* `{font_name}`\n\n"
-        f"👉 *Now send any photo with text like: `Top text | Bottom text`*",
-        reply_markup=callback.message.reply_markup,
-        parse_mode="Markdown"
-    )
+    t = LANGS[lang_code]
+    text = f"**{t['title']}**\n━━━━━━━━━━━━━━━━━━━\n{t['desc']}\n\n📝 **Guide:**\n{t['step1']}\n{t['step2']}\n\n👉 *Send a photo now!*"
+    await callback.message.edit_text(text, reply_markup=get_main_keyboard(lang_code), parse_mode="Markdown")
+    await callback.answer(f"Language updated!")
 
 @dp.message(F.photo)
 async def generate_meme(message: Message):
-    status_msg = await message.answer("🔄 **Rendering meme with style...**", parse_mode="Markdown")
+    pref = get_pref(message.from_user.id)
+    t = LANGS[pref["lang"]]
+    
+    status_msg = await message.answer("🔄 **Rendering meme...**", parse_mode="Markdown")
     
     file_path = f"temp_{message.from_user.id}.jpg"
     output_path = f"meme_{message.from_user.id}.jpg"
@@ -107,25 +148,17 @@ async def generate_meme(message: Message):
         draw = ImageDraw.Draw(img)
         width, height = img.size
         
-        user_choice = user_fonts.get(message.from_user.id, "impact")
-        font_paths = FONTS[user_choice]["paths"]
-        
-        font = None
+        font_path = f"fonts/{pref['font']}.ttf"
         font_size = max(int(height / 10), 20)
         
-        for path in font_paths:
-            try:
-                font = ImageFont.truetype(path, font_size)
-                break
-            except:
-                continue
-                
-        if not font:
+        try:
+            font = ImageFont.truetype(font_path, font_size)
+        except:
             font = ImageFont.load_default()
 
         def draw_text_with_outline(xy, text, font, draw):
             x, y = xy
-            outline_range = max(int(font_size / 12), 2)
+            outline_range = max(int(font_size / 10), 3)
             for adj_x in range(-outline_range, outline_range + 1):
                 for adj_y in range(-outline_range, outline_range + 1):
                     if adj_x != 0 or adj_y != 0:
@@ -140,16 +173,12 @@ async def generate_meme(message: Message):
             
         img.save(output_path)
         
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔄 Make another", callback_data="font_impact")]
-        ])
-        
         with open(output_path, "rb") as meme_file:
             input_file = BufferedInputFile(meme_file.read(), filename="meme.jpg")
             await message.answer_photo(
                 photo=input_file,
-                caption="✅ **Meme generated successfully!**",
-                reply_markup=keyboard,
+                caption=t["success"],
+                reply_markup=get_main_keyboard(pref["lang"]),
                 parse_mode="Markdown"
             )
             
@@ -157,7 +186,7 @@ async def generate_meme(message: Message):
         
     except Exception as e:
         logging.error(f"Meme Error: {e}")
-        await status_msg.edit_text("❌ **Error:** Could not process this image.")
+        await status_msg.edit_text(t["err"])
         
     finally:
         if os.path.exists(file_path):
@@ -167,7 +196,8 @@ async def generate_meme(message: Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("Meme Generator Bot with Fonts is online!")
+    await ensure_fonts()
+    print("Meme Generator Bot is fully loaded & online!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
