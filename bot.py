@@ -17,8 +17,8 @@ user_styles = {}
 def get_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="⚡ Tech / Gaming", callback_data="style_tech"),
-            InlineKeyboardButton(text="📌 Minimal", callback_data="style_minimal")
+            InlineKeyboardButton(text=" Tech / Gaming", callback_data="style_tech"),
+            InlineKeyboardButton(text=" Minimal", callback_data="style_minimal")
         ]
     ])
 
@@ -36,7 +36,7 @@ async def cmd_start(message: Message):
 async def set_style(callback: CallbackQuery):
     style = callback.data.split("_")[1]
     user_styles[callback.from_user.id] = style
-    style_name = "Tech / Gaming ⚡" if style == "tech" else "Minimal 📌"
+    style_name = "Tech / Gaming " if style == "tech" else "Minimal 📌"
     await callback.answer(f"Style changed to {style_name}!", show_alert=True)
 
 def process_text(text: str, style: str) -> str:
