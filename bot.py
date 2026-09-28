@@ -4,7 +4,7 @@ import os
 import sys
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ParseMode
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -17,8 +17,8 @@ user_styles = {}
 def get_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text=" Tech / Gaming", callback_data="style_tech"),
-            InlineKeyboardButton(text=" Minimal", callback_data="style_minimal")
+            InlineKeyboardButton(text="⚡ Tech / Gaming", callback_data="style_tech"),
+            InlineKeyboardButton(text="📌 Minimal", callback_data="style_minimal")
         ]
     ])
 
@@ -30,13 +30,13 @@ async def cmd_start(message: Message):
         "✨ *Your personal channel post formatter.*\n\n"
         "📝 *Send me your raw text, and I'll turn it into a clean, structured post instantly!*"
     )
-    await message.answer(welcome_text, reply_markup=get_keyboard(), parse_mode=ParseMode.MARKDOWN)
+    await message.answer(welcome_text, reply_markup=get_keyboard(), parse_mode="Markdown")
 
 @dp.callback_query(F.data.startswith("style_"))
 async def set_style(callback: CallbackQuery):
     style = callback.data.split("_")[1]
     user_styles[callback.from_user.id] = style
-    style_name = "Tech / Gaming " if style == "tech" else "Minimal 📌"
+    style_name = "Tech / Gaming ⚡" if style == "tech" else "Minimal 📌"
     await callback.answer(f"Style changed to {style_name}!", show_alert=True)
 
 def process_text(text: str, style: str) -> str:
@@ -58,7 +58,7 @@ def process_text(text: str, style: str) -> str:
             formatted_lines.append("")
             continue
             
-        # Автоматично перетворюємо пункти з дефісом на гарні списки
+        # Автоматично перетворюємо пункти з дефісом або зірочкою на гарні списки
         if stripped.startswith("- ") or stripped.startswith("* "):
             clean_item = stripped[2:].strip()
             if style == "tech":
@@ -86,7 +86,7 @@ async def format_post(message: Message):
     await message.answer(
         result_text,
         reply_markup=get_keyboard(),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode="Markdown"
     )
 
 async def main():
