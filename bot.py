@@ -12,37 +12,37 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# 10 різних великих шаблонів для генерації промтів
+# 10 великих, детальних та професійних шаблонів для генерації промтів
 PROMPT_TEMPLATES = [
-    # 1. Digital Vector Art / Minimalist
-    lambda t: f"A striking vector illustration of {t}, clean minimalist aesthetic, sharp lines, smooth vector curves, vibrant contrasting colors, flat design with subtle gradients, professional graphic design,behance featured, 8k resolution --ar 1:1",
+    # 1. Цифровий векторний арт / Мінімалізм
+    lambda t: f"A striking high-end vector illustration of {t}, clean minimalist aesthetic, sharp clean lines, smooth vector curves, vibrant contrasting color palette, flat design with subtle modern gradients, professional graphic design, Behance featured, crisp details, 8k resolution, vector masterpiece --ar 1:1 --v 6.0",
     
-    # 2. Cyberpunk / Neon
-    lambda t: f"A futuristic cyberpunk concept art of {t}, glowing neon lights, holographic accents, dark gritty urban background, cinematic moody lighting, intricate sci-fi details, unreal engine 5 render, hyper-detailed, masterpiece --ar 16:9",
+    # 2. Кіберпанк / Неон
+    lambda t: f"A futuristic cyberpunk concept art of {t}, glowing neon lights, holographic accents and data streams, dark gritty urban alleyway background, cinematic moody lighting, intricate sci-fi mechanical details, unreal engine 5 render, hyper-detailed, ray-tracing reflections, masterpiece --ar 16:9 --v 6.0",
     
-    # 3. Cinematic Photorealistic
-    lambda t: f"A breathtaking photorealistic cinematic shot of {t}, dramatic volumetric lighting, highly detailed textures, depth of field, shot on 35mm lens, professional color grading, ultra-realistic, award-winning photography --ar 16:9",
+    # 3. Кінематографічний фотореалізм
+    lambda t: f"A breathtaking photorealistic cinematic shot of {t}, dramatic volumetric studio lighting, highly detailed textures, realistic depth of field, shot on 35mm lens, anamorphic flare, professional color grading, ultra-realistic skin and surface details, award-winning photography --ar 16:9 --v 6.0",
     
-    # 4. Dark Fantasy / Epic
-    lambda t: f"An epic dark fantasy digital painting of {t}, mysterious atmosphere, gothic architecture elements, moody dramatic shadows, intricate armor and surface details, concept art by Greg Rutkowski, oil on canvas texture --ar 4:3",
+    # 4. Темне фентезі / Епік
+    lambda t: f"An epic dark fantasy digital painting of {t}, mysterious atmosphere, gothic architecture elements, moody dramatic shadows, intricate armor and surface details, concept art by master artists, rich oil on canvas texture, dramatic lighting, highly detailed --ar 4:3 --v 6.0",
     
-    # 5. Anime / Manga Style
-    lambda t: f"A vibrant modern anime art style of {t}, beautiful cel shading, expressive lines, dynamic composition, glowing highlights, background art by Makoto Shinkai, highly detailed, vivid saturated colors --ar 16:9",
+    # 5. Сучасне аніме / Манга
+    lambda t: f"A vibrant modern anime art style of {t}, beautiful intricate cel shading, expressive clean lines, dynamic composition, glowing highlights, background art inspired by makoto shinkai, highly detailed, vivid saturated colors, visual novel cover art quality --ar 16:9 --v 6.0",
     
-    # 6. 3D Pixar / Cute Style
-    lambda t: f"A charming 3D cartoon style of {t}, smooth clay-like textures, soft studio lighting, volumetric rendering, cute and playful design, octane render, pastel color palette, highly polished --ar 1:1",
+    # 6. 3D Pixar / Мільтплікаційний стиль
+    lambda t: f"A charming premium 3D cartoon style of {t}, smooth clay-like subsurface scattering textures, soft studio three-point lighting, volumetric rendering, cute and playful design, octane render, pastel color palette, highly polished, smooth contours --ar 1:1 --v 6.0",
     
-    # 7. Retro Synthwave / 80s
-    lambda t: f"An 80s retro synthwave aesthetic depiction of {t}, neon grid lines, sunset gradient background, VHS glitch effects, vibrant purple and cyan color scheme, nostalgic cyberpunk vibe, sharp details --ar 16:9",
+    # 7. Ретро синтвейв / 80-ті
+    lambda t: f"An 80s retro synthwave aesthetic depiction of {t}, glowing neon grid lines, vibrant sunset gradient background, subtle VHS glitch effects, nostalgic purple and cyan color scheme, vintage cyberpunk vibe, sharp neon glow, retro-futuristic masterpiece --ar 16:9 --v 6.0",
     
-    # 8. Oil Painting / Classical
-    lambda t: f"A classical oil painting masterpiece featuring {t}, visible heavy brushstrokes, rich deep color palette, dramatic chiaroscuro lighting reminiscent of Rembrandt, museum-quality fine art --ar 4:3",
+    # 8. Класичний олійний живопис
+    lambda t: f"A classical fine oil painting masterpiece featuring {t}, visible heavy textured brushstrokes, rich deep color palette, dramatic chiaroscuro lighting reminiscent of old masters, museum-quality artwork, canvas grain, profound depth --ar 4:3 --v 6.0",
     
-    # 9. Minimalist Line Art
-    lambda t: f"An elegant minimalist continuous line art of {t}, abstract geometric background shapes, sophisticated composition, delicate thin ink strokes, modern wall art print style --ar 1:1",
+    # 9. Мінімалістичний лайнарт
+    lambda t: f"An elegant minimalist continuous line art of {t}, abstract geometric background shapes, sophisticated composition, delicate thin black ink strokes, modern wall art print style, clean white background, aesthetic vector lines --ar 1:1 --v 6.0",
     
-    # 10. Moody Neon Portrait / High-Tech
-    lambda t: f"A high-end hyper-detailed studio concept of {t}, multi-colored rim lighting, futuristic industrial background, ultra-sharp focus, render-ready textures, cybernetic aesthetic --ar 1:1"
+    # 10. Високотехнологічний неоновий портрет
+    lambda t: f"A high-end hyper-detailed studio concept of {t}, multi-colored vibrant rim lighting, futuristic industrial laboratory background, ultra-sharp focus, render-ready complex textures, cybernetic aesthetic, Unreal Engine 5 hyper-realism --ar 1:1 --v 6.0"
 ]
 
 def get_keyboard():
@@ -56,8 +56,8 @@ async def cmd_start(message: Message):
         "✦ ─────────── ⚡ ─────────── ✦\n"
         "       🤖 **FORMATIFY BOT**       \n"
         "✦ ─────────── ⚡ ─────────── ✦\n\n"
-        "✨ *Advanced AI Prompt Enhancer.*\n\n"
-        "📝 *Send me any raw idea (e.g., 'gray cat avatar'), and I'll randomly transform it into one of 10 massive, professional AI prompts!*"
+        "✨ *Massive AI Prompt Enhancer.*\n\n"
+        "📝 *Send me any raw idea (e.g., 'gray cat avatar'), and I'll transform it into a massive, detailed, professional AI prompt!*"
     )
     await message.answer(welcome_text, reply_markup=get_keyboard(), parse_mode="Markdown")
 
@@ -65,7 +65,7 @@ async def cmd_start(message: Message):
 async def handle_prompt_generation(message: Message):
     raw_text = message.text.strip()
     
-    # Вибираємо випадковий шаблон з 10 доступних
+    # Вибираємо випадковий великий шаблон
     selected_template = random.choice(PROMPT_TEMPLATES)
     generated_prompt = selected_template(raw_text)
     
@@ -73,10 +73,10 @@ async def handle_prompt_generation(message: Message):
         "✦ ─────────── ✧ ─────────── ✦\n"
         "🎯 **RAW IDEA:**\n"
         f"_{raw_text}_\n\n"
-        "🚀 **ENHANCED PROMPT (Expanded & Randomized):**\n"
+        "🚀 **MASSIVE ENHANCED PROMPT:**\n"
         f"`{generated_prompt}`\n"
         "✦ ─────────── ✧ ─────────── ✦\n\n"
-        "💡 *Copy and paste this into Midjourney, DALL-E, or Stable Diffusion!*"
+        "💡 *Copy and paste this into Midjourney or DALL-E!*"
     )
     
     await message.answer(
@@ -87,7 +87,7 @@ async def handle_prompt_generation(message: Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("Formatify Prompt Bot is online with 10 variations!")
+    print("Formatify Massive Prompt Bot is online!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
