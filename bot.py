@@ -11,45 +11,44 @@ TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Зберігаємо обраний стиль для кожного користувача (за замовчуванням 'vector')
+# Зберігаємо обраний стиль для кожного користувача
 user_selected_style = {}
 
-# Словник з великими детальними шаблонами для кожного стилю
+# Сучасні, соковиті та величезні шаблони промтів
 PROMPT_TEMPLATES = {
-    "vector": lambda t: f"A striking high-end vector illustration of {t}, clean minimalist aesthetic, sharp clean lines, smooth vector curves, vibrant contrasting color palette, flat design with subtle modern gradients, professional graphic design, Behance featured, crisp details, 8k resolution, vector masterpiece --ar 1:1 --v 6.0",
+    "artistic": lambda t: f"A breathtaking modern digital illustration of {t}, rich painterly textures combined with crisp modern lines, expressive artistic brushwork, sophisticated color grading, dramatic atmospheric lighting, concept art masterpiece, trending on ArtStation, ultra-detailed, 8k resolution, cinematic composition --ar 16:9 --v 6.0",
     
-    "cyberpunk": lambda t: f"A futuristic cyberpunk concept art of {t}, glowing neon lights, holographic accents and data streams, dark gritty urban alleyway background, cinematic moody lighting, intricate sci-fi mechanical details, unreal engine 5 render, hyper-detailed, ray-tracing reflections, masterpiece --ar 16:9 --v 6.0",
+    "webtoon": lambda t: f"A stunning modern webtoon and manhwa style illustration of {t}, clean polished linework, vibrant rich colors, gorgeous cel-shading with soft gradients, dramatic soft rim lighting, highly detailed character design, web comic cover art quality, visual storytelling masterpiece --ar 16:9 --v 6.0",
     
-    "photo": lambda t: f"A breathtaking photorealistic cinematic shot of {t}, dramatic volumetric studio lighting, highly detailed textures, realistic depth of field, shot on 35mm lens, anamorphic flare, professional color grading, ultra-realistic skin and surface details, award-winning photography --ar 16:9 --v 6.0",
+    "concept": lambda t: f"A high-end cinematic concept art of {t}, complex environment design, moody atmospheric haze, volumetric lighting rays, intricate surface textures, masterpiece created by industry veteran concept artists, Unreal Engine 5 render aesthetic, hyper-detailed depth --ar 16:9 --v 6.0",
     
-    "fantasy": lambda t: f"An epic dark fantasy digital painting of {t}, mysterious atmosphere, gothic architecture elements, moody dramatic shadows, intricate armor and surface details, concept art by master artists, rich oil on canvas texture, dramatic lighting, highly detailed --ar 4:3 --v 6.0",
+    "dark_fantasy": lambda t: f"A dark epic fantasy digital painting of {t}, moody gothic atmosphere, deep shadows with subtle glowing highlights, intricate ornate details, rich oil-on-canvas texture mixed with modern digital lighting, dramatic chiaroscuro, museum-grade fantasy art --ar 4:3 --v 6.0",
     
-    "anime": lambda t: f"A vibrant modern anime art style of {t}, beautiful intricate cel shading, expressive clean lines, dynamic composition, glowing highlights, background art inspired by makoto shinkai, highly detailed, vivid saturated colors, visual novel cover art quality --ar 16:9 --v 6.0",
+    "stylized_3d": lambda t: f"A modern stylized 3D render of {t}, gorgeous clay and matte surface textures, soft studio subsurface scattering, premium artistic toy design aesthetic, octane render, beautiful pastel and neon color harmony, smooth organic contours, highly polished --ar 1:1 --v 6.0",
     
-    "pixar": lambda t: f"A charming premium 3D cartoon style of {t}, smooth clay-like subsurface scattering textures, soft studio three-point lighting, volumetric rendering, cute and playful design, octane render, pastel color palette, highly polished, smooth contours --ar 1:1 --v 6.0",
+    "cyber_punk": lambda t: f"A next-gen cyberpunk aesthetic of {t}, hyper-detailed futuristic elements, complex holographic displays, moody rainy street reflections, neon glow, cinematic depth of field, ray-traced lighting, gritty yet clean sci-fi masterpiece --ar 16:9 --v 6.0",
     
-    "synthwave": lambda t: f"An 80s retro synthwave aesthetic depiction of {t}, glowing neon grid lines, vibrant sunset gradient background, subtle VHS glitch effects, nostalgic purple and cyan color scheme, vintage cyberpunk vibe, sharp neon glow, retro-futuristic masterpiece --ar 16:9 --v 6.0",
+    "anime_modern": lambda t: f"A high-end modern anime key visual featuring {t}, breathtaking background art inspired by Makoto Shinkai, luminous lighting, vibrant saturated colors, emotional atmosphere, exquisite detail in every element, crisp outlines, visual novel masterpiece --ar 16:9 --v 6.0",
     
-    "oil": lambda t: f"A classical fine oil painting masterpiece featuring {t}, visible heavy textured brushstrokes, rich deep color palette, dramatic chiaroscuro lighting reminiscent of old masters, museum-quality artwork, canvas grain, profound depth --ar 4:3 --v 6.0",
+    "minimal_vector": lambda t: f"A sleek modern vector art design of {t}, clean geometric shapes, sophisticated minimalist composition, flat design with smooth multi-layer gradients, elegant color palette, professional graphic branding style, crisp vector curves --ar 1:1 --v 6.0",
     
-    "lineart": lambda t: f"An elegant minimalist continuous line art of {t}, abstract geometric background shapes, sophisticated composition, delicate thin black ink strokes, modern wall art print style, clean white background, aesthetic vector lines --ar 1:1 --v 6.0",
+    "cinematic": lambda t: f"An ultra-detailed cinematic frame of {t}, shot on 35mm lens, anamorphic lens flare, professional Hollywood color grading, rich textures, incredible depth of field, dramatic moody atmosphere, award-winning cinematography --ar 16:9 --v 6.0",
     
-    "portrait": lambda t: f"A high-end hyper-detailed studio concept of {t}, multi-colored vibrant rim lighting, futuristic industrial laboratory background, ultra-sharp focus, render-ready complex textures, cybernetic aesthetic, Unreal Engine 5 hyper-realism --ar 1:1 --v 6.0"
+    "neon_portrait": lambda t: f"A stunning stylized artistic portrait of {t}, vibrant dual-tone neon rim lighting, deep contrasting background, highly detailed facial features and textures, modern pop-culture aesthetic, professional studio lighting setup --ar 1:1 --v 6.0"
 }
 
-def get_styles_keyboard(current_style: str = "vector"):
-    # Створюємо зручну сітку з кнопок стилів із позначкою вибраного
+def get_styles_keyboard(current_style: str = "artistic"):
     styles = [
-        ("vector", "🔹 Vector Art"),
-        ("cyberpunk", "⚡ Cyberpunk"),
-        ("photo", "📸 Photorealistic"),
-        ("fantasy", "🗡️ Dark Fantasy"),
-        ("anime", "✨ Anime Style"),
-        ("pixar", "🧸 3D Pixar"),
-        ("synthwave", "🌆 Synthwave 80s"),
-        ("oil", "🖼️ Oil Painting"),
-        ("lineart", "✏️ Line Art"),
-        ("portrait", "💡 Neon Portrait")
+        ("artistic", "🎨 Artistic Paint"),
+        ("webtoon", "📖 Webtoon / Manhwa"),
+        ("concept", "🏛️ Concept Art"),
+        ("dark_fantasy", "🗡️ Dark Fantasy"),
+        ("stylized_3d", "🧊 Modern 3D"),
+        ("cyber_punk", "⚡ Next-Gen Cyber"),
+        ("anime_modern", "✨ Modern Anime"),
+        ("minimal_vector", "📐 Clean Vector"),
+        ("cinematic", "🎬 Cinematic Shot"),
+        ("neon_portrait", "💡 Neon Portrait")
     ]
     
     keyboard = []
@@ -67,22 +66,22 @@ def get_styles_keyboard(current_style: str = "vector"):
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
-    user_selected_style[message.from_user.id] = "vector"
+    user_selected_style[message.from_user.id] = "artistic"
     welcome_text = (
         "✦ ─────────── ⚡ ─────────── ✦\n"
         "       🤖 **FORMATIFY BOT**       \n"
         "✦ ─────────── ⚡ ─────────── ✦\n\n"
-        "✨ *Interactive AI Prompt Enhancer.*\n\n"
-        "👇 *Choose your preferred style below, then send me your raw idea (e.g., 'gray cat avatar')!*"
+        "✨ *Modern Massive AI Prompt Enhancer.*\n\n"
+        "👇 *Choose a modern style below, then send your raw idea (e.g., 'gray cat avatar')!*"
     )
-    await message.answer(welcome_text, reply_markup=get_styles_keyboard("vector"), parse_mode="Markdown")
+    await message.answer(welcome_text, reply_markup=get_styles_keyboard("artistic"), parse_mode="Markdown")
 
 @dp.callback_query(F.data.startswith("style_"))
 async def set_user_style(callback: CallbackQuery):
     style_code = callback.data.split("_")[1]
     user_selected_style[callback.from_user.id] = style_code
     
-    await callback.answer(f"Style selected: {style_code.upper()}", show_alert=True)
+    await callback.answer(f"Style: {style_code.upper()}", show_alert=True)
     
     try:
         await callback.message.edit_reply_markup(reply_markup=get_styles_keyboard(style_code))
@@ -92,21 +91,20 @@ async def set_user_style(callback: CallbackQuery):
 @dp.message(F.text & ~F.text.startswith("/"))
 async def handle_prompt_generation(message: Message):
     user_id = message.from_user.id
-    current_style = user_selected_style.get(user_id, "vector")
+    current_style = user_selected_style.get(user_id, "artistic")
     raw_text = message.text.strip()
     
-    # Генеруємо промт на основі обраного користувачем стилю
-    template_func = PROMPT_TEMPLATES.get(current_style, PROMPT_TEMPLATES["vector"])
+    template_func = PROMPT_TEMPLATES.get(current_style, PROMPT_TEMPLATES["artistic"])
     generated_prompt = template_func(raw_text)
     
     response = (
         "✦ ─────────── ✧ ─────────── ✦\n"
         f"🎯 **RAW IDEA:** _{raw_text}_\n"
         f"🎨 **STYLE:** `{current_style.upper()}`\n\n"
-        "🚀 **MASSIVE ENHANCED PROMPT:**\n"
+        "🚀 **MASSIVE PROMPT:**\n"
         f"`{generated_prompt}`\n"
         "✦ ─────────── ✧ ─────────── ✦\n\n"
-        "💡 *Copy and paste this into Midjourney or DALL-E!*"
+        "💡 *Copy and paste into Midjourney or DALL-E!*"
     )
     
     await message.answer(
@@ -117,7 +115,7 @@ async def handle_prompt_generation(message: Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    print("Formatify Interactive Prompt Bot is online!")
+    print("Formatify Modern Prompt Bot is online!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
