@@ -914,7 +914,7 @@ async def rotate_menu(
                 ),
             ],
             [
-          InlineKeyboardButton(
+                          InlineKeyboardButton(
                     text="180°",
                     callback_data="rot_180"
                 ),
@@ -980,8 +980,6 @@ async def rotate_image(
     await callback.answer(
         "Done! Image rotated."
     )
-
-
 # =========================================================
 # BACK
 # =========================================================
