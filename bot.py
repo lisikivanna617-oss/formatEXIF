@@ -80,7 +80,7 @@ def main_keyboard():
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🗜 Compress",
+                    text="⚡️ Compress",
                     callback_data="compress"
                 ),
                 InlineKeyboardButton(
@@ -90,7 +90,7 @@ def main_keyboard():
             ],
             [
                 InlineKeyboardButton(
-                    text="✂️ Split",
+                    text="🧩 Split",
                     callback_data="split"
                 ),
                 InlineKeyboardButton(
@@ -100,7 +100,7 @@ def main_keyboard():
             ],
             [
                 InlineKeyboardButton(
-                    text="🖼 Crop",
+                    text="✂️ Crop",
                     callback_data="crop"
                 ),
                 InlineKeyboardButton(
@@ -110,11 +110,11 @@ def main_keyboard():
             ],
             [
                 InlineKeyboardButton(
-                    text="🧹 Remove EXIF",
+                    text="🧹 Clean EXIF",
                     callback_data="exif"
                 ),
                 InlineKeyboardButton(
-                    text="🔃 Rotate",
+                    text="🔄 Rotate",
                     callback_data="rotate"
                 ),
             ],
@@ -127,7 +127,7 @@ def back_keyboard():
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="⬅️ Back",
+                    text="◀️ Back to menu",
                     callback_data="back"
                 )
             ]
@@ -247,9 +247,8 @@ def image_exists(user_id: int):
 async def start(message: Message):
 
     await message.answer(
-        "<b>🖼 IMGFORCE</b>\n\n"
-        "Image processing toolkit for Telegram.\n\n"
-        "Send me a photo and choose an operation.",
+        "✨ Welcome! This is IMGFORCE — your handy toolkit for quick image processing in Telegram.\n\n"
+        "📥 Send me a picture or photo, then choose the desired operation below:",
         reply_markup=main_keyboard()
     )
 
@@ -262,17 +261,16 @@ async def start(message: Message):
 async def help_command(message: Message):
 
     await message.answer(
-        "<b>🖼 IMGFORCE</b>\n\n"
-        "Available tools:\n\n"
-        "🗜 Compress — reduce file size\n"
+        "🛠 Available IMGFORCE tools:\n\n"
+        "⚡️ Compress — reduce file size\n"
         "📐 Resize — change resolution\n"
-        "✂️ Split — divide image into equal parts\n"
-        "🔄 Convert — JPG / PNG / WEBP\n"
-        "🖼 Crop — crop by aspect ratio\n"
-        "ℹ️ Info — image information\n"
-        "🧹 Remove EXIF — remove metadata\n"
-        "🔃 Rotate — rotate image\n\n"
-        "Send a photo to begin."
+        "🧩 Split — divide image into parts\n"
+        "🔄 Convert — JPG / PNG / WEBP formats\n"
+        "✂️ Crop — crop by aspect ratio\n"
+        "ℹ️ Info — detailed file details\n"
+        "🧹 Clean EXIF — remove metadata\n"
+        "🔄 Rotate — rotate image orientation\n\n"
+        "Simply send a photo to begin!"
     )
 
 
@@ -305,17 +303,15 @@ async def receive_photo(message: Message):
 
         if image is None:
             await message.answer(
-                "❌ Couldn't process this image."
+                "❌ Failed to process this image."
             )
             return
 
         await message.answer(
-            "<b>✅ Image received</b>\n\n"
-            f"Resolution: "
-            f"<code>{image.width}×{image.height}</code>\n"
-            f"Format: "
-            f"<code>{image.format}</code>\n\n"
-            "Choose an operation:",
+            "✅ Photo uploaded successfully!\n\n"
+            f"• Resolution: {image.width} × {image.height}\n"
+            f"• Format: {image.format}\n\n"
+            "Choose what you want to do with the photo:",
             reply_markup=main_keyboard()
         )
 
@@ -324,7 +320,7 @@ async def receive_photo(message: Message):
         logging.exception(e)
 
         await message.answer(
-            "❌ Failed to download the image."
+            "❌ Error downloading the photo."
         )
 
 
@@ -344,7 +340,7 @@ async def image_info(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -358,15 +354,12 @@ async def image_info(
     ratio = image.width / image.height
 
     await callback.message.answer(
-        "<b>ℹ️ Image information</b>\n\n"
-        f"Format: <code>{image.format}</code>\n"
-        f"Resolution: "
-        f"<code>{image.width}×{image.height}</code>\n"
-        f"Mode: <code>{image.mode}</code>\n"
-        f"File size: "
-        f"<code>{size_kb:.2f} KB</code>\n"
-        f"Aspect ratio: "
-        f"<code>{ratio:.2f}</code>"
+        "📊 Image Information:\n\n"
+        f"• Format: {image.format}\n"
+        f"• Resolution: {image.width} × {image.height}\n"
+        f"• Color Mode: {image.mode}\n"
+        f"• File Size: {size_kb:.2f} KB\n"
+        f"• Aspect Ratio: {ratio:.2f}"
     )
 
     await callback.answer()
@@ -385,21 +378,21 @@ async def compress_menu(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="High",
+                    text="High (85%)",
                     callback_data="compress_85"
                 ),
                 InlineKeyboardButton(
-                    text="Medium",
+                    text="Medium (60%)",
                     callback_data="compress_60"
                 ),
                 InlineKeyboardButton(
-                    text="Low",
+                    text="Low (40%)",
                     callback_data="compress_40"
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Back",
+                    text="◀️ Back",
                     callback_data="back"
                 )
             ]
@@ -407,8 +400,8 @@ async def compress_menu(
     )
 
     await callback.message.answer(
-        "<b>🗜 Compress</b>\n\n"
-        "Choose compression level:",
+        "⚡️ Compression Settings\n\n"
+        "Choose your preferred compression level:",
         reply_markup=keyboard
     )
 
@@ -429,7 +422,7 @@ async def compress_image(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -452,7 +445,7 @@ async def compress_image(
     )
 
     await callback.answer(
-        "Image compressed!"
+        "Done! Image compressed."
     )
 
 
@@ -489,7 +482,7 @@ async def resize_menu(
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Back",
+                    text="◀️ Back",
                     callback_data="back"
                 )
             ]
@@ -497,8 +490,8 @@ async def resize_menu(
     )
 
     await callback.message.answer(
-        "<b>📐 Resize</b>\n\n"
-        "Choose maximum width:",
+        "📐 Resize Image\n\n"
+        "Choose maximum width constraint:",
         reply_markup=keyboard
     )
 
@@ -519,7 +512,7 @@ async def resize_image(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -560,7 +553,7 @@ async def resize_image(
     )
 
     await callback.answer(
-        "Image resized!"
+        "Done! Image resized."
     )
 
 
@@ -587,23 +580,23 @@ async def split_menu(
             ],
             [
                 InlineKeyboardButton(
-                    text="4 parts",
+                    text="4 parts (2x2)",
                     callback_data="split_4"
                 ),
                 InlineKeyboardButton(
-                    text="6 parts",
+                    text="6 parts (3x2)",
                     callback_data="split_6"
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="9 parts",
+                    text="9 parts (3x3)",
                     callback_data="split_9"
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Back",
+                    text="◀️ Back",
                     callback_data="back"
                 )
             ]
@@ -611,8 +604,8 @@ async def split_menu(
     )
 
     await callback.message.answer(
-        "<b>✂️ Split image</b>\n\n"
-        "Choose the number of equal parts:",
+        "🧩 Split Image\n\n"
+        "Choose number of equal parts:",
         reply_markup=keyboard
     )
 
@@ -633,7 +626,7 @@ async def split_image(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -643,79 +636,31 @@ async def split_image(
         callback.data.split("_")[1]
     )
 
-    # 2 / 3 = vertical slices
     if count in (2, 3):
-
         columns = count
         rows = 1
-
-    # 4 = 2x2
     elif count == 4:
-
         columns = 2
         rows = 2
-
-    # 6 = 3x2
     elif count == 6:
-
         columns = 3
         rows = 2
-
-    # 9 = 3x3
     else:
-
         columns = 3
         rows = 3
 
     width, height = image.size
 
     for row in range(rows):
-
         for column in range(columns):
+            left = round(column * width / columns)
+            top = round(row * height / rows)
+            right = round((column + 1) * width / columns)
+            bottom = round((row + 1) * height / rows)
 
-            left = round(
-                column
-                * width
-                / columns
-            )
-
-            top = round(
-                row
-                * height
-                / rows
-            )
-
-            right = round(
-                (column + 1)
-                * width
-                / columns
-            )
-
-            bottom = round(
-                (row + 1)
-                * height
-                / rows
-            )
-
-            part = image.crop(
-                (
-                    left,
-                    top,
-                    right,
-                    bottom
-                )
-            )
-
-            data = image_to_bytes(
-                part,
-                "PNG"
-            )
-
-            number = (
-                row * columns
-                + column
-                + 1
-            )
+            part = image.crop((left, top, right, bottom))
+            data = image_to_bytes(part, "PNG")
+            number = row * columns + column + 1
 
             await send_image(
                 callback.message,
@@ -724,7 +669,7 @@ async def split_image(
             )
 
     await callback.answer(
-        "Image split!"
+        "Done! Image split."
     )
 
 
@@ -755,7 +700,7 @@ async def convert_menu(
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Back",
+                    text="◀️ Back",
                     callback_data="back"
                 )
             ]
@@ -763,8 +708,8 @@ async def convert_menu(
     )
 
     await callback.message.answer(
-        "<b>🔄 Convert</b>\n\n"
-        "Choose output format:",
+        "🔄 Convert Format\n\n"
+        "Choose target format:",
         reply_markup=keyboard
     )
 
@@ -785,7 +730,7 @@ async def convert_image(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -807,7 +752,7 @@ async def convert_image(
     )
 
     await callback.answer(
-        "Image converted!"
+        "Done! Format converted."
     )
 
 
@@ -824,7 +769,7 @@ async def crop_menu(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="1:1",
+                    text="1:1 (Square)",
                     callback_data="crop_1_1"
                 ),
                 InlineKeyboardButton(
@@ -838,13 +783,13 @@ async def crop_menu(
                     callback_data="crop_16_9"
                 ),
                 InlineKeyboardButton(
-                    text="9:16",
+                    text="9:16 (Story)",
                     callback_data="crop_9_16"
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Back",
+                    text="◀️ Back",
                     callback_data="back"
                 )
             ]
@@ -852,7 +797,7 @@ async def crop_menu(
     )
 
     await callback.message.answer(
-        "<b>🖼 Crop</b>\n\n"
+        "✂️ Crop Image\n\n"
         "Choose aspect ratio:",
         reply_markup=keyboard
     )
@@ -874,7 +819,7 @@ async def crop_image(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -887,58 +832,20 @@ async def crop_image(
     ratio_w = int(ratio_w)
     ratio_h = int(ratio_h)
 
-    target_ratio = (
-        ratio_w / ratio_h
-    )
-
-    current_ratio = (
-        image.width / image.height
-    )
+    target_ratio = ratio_w / ratio_h
+    current_ratio = image.width / image.height
 
     if current_ratio > target_ratio:
-
-        new_width = int(
-            image.height
-            * target_ratio
-        )
-
-        left = (
-            image.width
-            - new_width
-        ) // 2
-
-        box = (
-            left,
-            0,
-            left + new_width,
-            image.height
-        )
-
+        new_width = int(image.height * target_ratio)
+        left = (image.width - new_width) // 2
+        box = (left, 0, left + new_width, image.height)
     else:
-
-        new_height = int(
-            image.width
-            / target_ratio
-        )
-
-        top = (
-            image.height
-            - new_height
-        ) // 2
-
-        box = (
-            0,
-            top,
-            image.width,
-            top + new_height
-        )
+        new_height = int(image.width / target_ratio)
+        top = (image.height - new_height) // 2
+        box = (0, top, image.width, top + new_height)
 
     cropped = image.crop(box)
-
-    data = image_to_bytes(
-        cropped,
-        "PNG"
-    )
+    data = image_to_bytes(cropped, "PNG")
 
     await send_image(
         callback.message,
@@ -947,12 +854,12 @@ async def crop_image(
     )
 
     await callback.answer(
-        "Image cropped!"
+        "Done! Image cropped."
     )
 
 
 # =========================================================
-# REMOVE EXIF
+# REMOVE EXIF & ROTATE
 # =========================================================
 
 @dp.callback_query(F.data == "exif")
@@ -967,7 +874,84 @@ async def remove_exif(
     if image is None:
 
         await callback.answer(
-            "Send a photo first.",
+            "Please send a photo first!",
+            show_alert=True
+        )
+
+        return
+
+    data = image_to_bytes(
+        image,
+        "JPEG" if image.format in ("JPEG", "JPG") else "PNG"
+    )
+
+    await send_image(
+        callback.message,
+        data,
+        "clean_image.jpg"
+    )
+
+    await callback.answer(
+        "Done! Metadata removed."
+    )
+
+
+@dp.callback_query(F.data == "rotate")
+async def rotate_menu(
+    callback: CallbackQuery
+):
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="90° Clockwise",
+                    callback_data="rot_270"
+                ),
+                InlineKeyboardButton(
+                    text="90° Counter-clockwise",
+                    callback_data="rot_90"
+                ),
+            ],
+            [
+          InlineKeyboardButton(
+                    text="180°",
+                    callback_data="rot_180"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="◀️ Back",
+                    callback_data="back"
+                )
+            ]
+        ]
+    )
+
+    await callback.message.answer(
+        "🔄 Rotate Image\n\n"
+        "Choose rotation angle:",
+        reply_markup=keyboard
+    )
+
+    await callback.answer()
+
+
+@dp.callback_query(
+    F.data.startswith("rot_")
+)
+async def rotate_image(
+    callback: CallbackQuery
+):
+
+    user_id = callback.from_user.id
+
+    image = get_image(user_id)
+
+    if image is None:
+
+        await callback.answer(
+            "Please send a photo first!",
             show_alert=True
         )
 
@@ -990,11 +974,11 @@ async def remove_exif(
     await send_image(
         callback.message,
         data,
-        f"rotated_{degrees}.png"
+        "rotated.png"
     )
 
     await callback.answer(
-        "Image rotated!"
+        "Done! Image rotated."
     )
 
 
@@ -1008,7 +992,7 @@ async def back(
 ):
 
     await callback.message.answer(
-        "<b>🖼 IMGFORCE</b>\n\n"
+        "✨ IMGFORCE Main Menu.\n\n"
         "Choose an operation:",
         reply_markup=main_keyboard()
     )
@@ -1026,7 +1010,7 @@ async def unknown_message(
 ):
 
     await message.answer(
-        "🖼 Send me a photo to start.",
+        "👋 Please send me a photo to start working.",
         reply_markup=main_keyboard()
     )
 
@@ -1046,7 +1030,6 @@ async def main():
 
 if __name__ == "__main__":
 
-    # Start Render HTTP server
     web_thread = threading.Thread(
         target=run_web,
         daemon=True
@@ -1054,5 +1037,4 @@ if __name__ == "__main__":
 
     web_thread.start()
 
-    # Start Telegram bot
     asyncio.run(main())
