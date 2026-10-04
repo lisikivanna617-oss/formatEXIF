@@ -1,2 +1,2 @@
-aiogram
-Pillow
+aiogram>=3.20,<4
+Pillow>=11.0,<13
