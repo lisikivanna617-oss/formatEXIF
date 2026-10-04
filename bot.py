@@ -83,26 +83,26 @@ def start_page_keyboard(page: int):
             InlineKeyboardButton(text="1/3", callback_data="start_page_1"),
             InlineKeyboardButton(text="➡️ Next", callback_data="start_page_2"),
         ]
+        buttons.append(nav_row)
     elif page == 2:
         nav_row = [
             InlineKeyboardButton(text="⬅️ Back", callback_data="start_page_1"),
             InlineKeyboardButton(text="2/3", callback_data="start_page_2"),
             InlineKeyboardButton(text="Next ➡️", callback_data="start_page_3"),
         ]
+        buttons.append(nav_row)
     else:  # page == 3
         nav_row = [
-            InlineKeyboardButton(text="⬅️ Back", callback_data="start_page_2"),
+            InlineKeyboardButton(text="⬅️️ Back", callback_data="start_page_2"),
             InlineKeyboardButton(text="3/3", callback_data="start_page_3"),
         ]
-        
-    buttons.append(nav_row)
-    
-    buttons.append([
-        InlineKeyboardButton(
-            text="🚀 Open Tools Menu", 
-            callback_data="back"
-        )
-    ])
+        buttons.append(nav_row)
+        buttons.append([
+            InlineKeyboardButton(
+                text="🚀 Get Started", 
+                callback_data="get_started"
+            )
+        ])
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -153,7 +153,7 @@ START_PAGES = {
         "Your all-in-one Telegram toolkit for quick and efficient image processing.\n\n"
         "👤 Owner & Developer: @vanishedhunter\n"
         "⚡️ Status: Online & Ready\n\n"
-        "Use the arrows below to learn more or send a photo to get started right away!"
+        "Use the arrows below to learn more!"
     ),
     2: (
         "🛠 Key Features Overview (2/3)\n\n"
@@ -166,10 +166,10 @@ START_PAGES = {
         "🔄 Rotate — adjust photo orientation instantly"
     ),
     3: (
-        "💡 How to Use (3/3)\n\n"
-        "1. Simply attach and send any photo into this chat.\n"
-        "2. Choose your desired action from the interactive menu.\n"
-        "3. Download your freshly processed file!\n\n"
+        "💡 How to Start (3/3)\n\n"
+        "1. Click '🚀 Get Started' or send any photo directly to this chat.\n"
+        "2. Choose your desired operation from the interactive menu.\n"
+        "3. Download your processed file!\n\n"
         "📩 For support or feedback, contact: @vanishedhunter"
     )
 }
@@ -190,6 +190,14 @@ async def process_start_page(callback: CallbackQuery):
     await callback.message.edit_text(
         START_PAGES[page],
         reply_markup=start_page_keyboard(page)
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "get_started")
+async def get_started_action(callback: CallbackQuery):
+    await callback.message.answer(
+        "📥 Please send me the photo you would like to work with."
     )
     await callback.answer()
 
@@ -631,19 +639,31 @@ async def rotate_image(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "back")
 async def back(callback: CallbackQuery):
-    await callback.message.answer(
-        "✨ IMGFORCE Main Menu.\n\nSelect an operation:",
-        reply_markup=main_keyboard()
-    )
+    user_id = callback.from_user.id
+    if user_id in images:
+        await callback.message.answer(
+            "✨ IMGFORCE Main Menu.\n\nSelect an operation:",
+            reply_markup=main_keyboard()
+        )
+    else:
+        await callback.message.answer(
+            "📥 Please send me the photo you would like to work with."
+        )
     await callback.answer()
 
 
 @dp.message()
 async def unknown_message(message: Message):
-    await message.answer(
-        "👋 Please send me a photo to start working.",
-        reply_markup=main_keyboard()
-    )
+    user_id = message.from_user.id
+    if user_id in images:
+        await message.answer(
+            " Select an operation below:",
+            reply_markup=main_keyboard()
+        )
+    else:
+        await message.answer(
+            "📥 Please send me the photo you would like to work with."
+        )
 
 
 # =========================================================
