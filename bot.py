@@ -75,48 +75,56 @@ def run_web():
 # KEYBOARDS
 # =========================================================
 
+def start_page_keyboard(page: int):
+    buttons = []
+    
+    if page == 1:
+        nav_row = [
+            InlineKeyboardButton(text="1/3", callback_data="start_page_1"),
+            InlineKeyboardButton(text="➡️ Next", callback_data="start_page_2"),
+        ]
+    elif page == 2:
+        nav_row = [
+            InlineKeyboardButton(text="⬅️ Back", callback_data="start_page_1"),
+            InlineKeyboardButton(text="2/3", callback_data="start_page_2"),
+            InlineKeyboardButton(text="Next ➡️", callback_data="start_page_3"),
+        ]
+    else:  # page == 3
+        nav_row = [
+            InlineKeyboardButton(text="⬅️ Back", callback_data="start_page_2"),
+            InlineKeyboardButton(text="3/3", callback_data="start_page_3"),
+        ]
+        
+    buttons.append(nav_row)
+    
+    buttons.append([
+        InlineKeyboardButton(
+            text="🚀 Open Tools Menu", 
+            callback_data="back"
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def main_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="⚡️ Compress",
-                    callback_data="compress"
-                ),
-                InlineKeyboardButton(
-                    text="📐 Resize",
-                    callback_data="resize"
-                ),
+                InlineKeyboardButton(text="⚡️ Compress", callback_data="compress"),
+                InlineKeyboardButton(text="📐 Resize", callback_data="resize"),
             ],
             [
-                InlineKeyboardButton(
-                    text="🧩 Split",
-                    callback_data="split"
-                ),
-                InlineKeyboardButton(
-                    text="🔄 Convert",
-                    callback_data="convert"
-                ),
+                InlineKeyboardButton(text="🧩 Split", callback_data="split"),
+                InlineKeyboardButton(text="🔄 Convert", callback_data="convert"),
             ],
             [
-                InlineKeyboardButton(
-                    text="✂️ Crop",
-                    callback_data="crop"
-                ),
-                InlineKeyboardButton(
-                    text="ℹ️ Info",
-                    callback_data="info"
-                ),
+                InlineKeyboardButton(text="✂️ Crop", callback_data="crop"),
+                InlineKeyboardButton(text="ℹ️ Info", callback_data="info"),
             ],
             [
-                InlineKeyboardButton(
-                    text="🧹 Clean EXIF",
-                    callback_data="exif"
-                ),
-                InlineKeyboardButton(
-                    text="🔄 Rotate",
-                    callback_data="rotate"
-                ),
+                InlineKeyboardButton(text="🧹 Clean EXIF", callback_data="exif"),
+                InlineKeyboardButton(text="🔄 Rotate", callback_data="rotate"),
             ],
         ]
     )
@@ -136,6 +144,63 @@ def back_keyboard():
 
 
 # =========================================================
+# START PAGES CONTENT & HANDLERS
+# =========================================================
+
+START_PAGES = {
+    1: (
+        "✨ Welcome to IMGFORCE! (1/3)\n\n"
+        "Your all-in-one Telegram toolkit for quick and efficient image processing.\n\n"
+        "👤 Owner & Developer: @vanishedhunter\n"
+        "⚡️ Status: Online & Ready\n\n"
+        "Use the arrows below to learn more or send a photo to get started right away!"
+    ),
+    2: (
+        "🛠 Key Features Overview (2/3)\n\n"
+        "⚡️ Compress — optimize image size without quality loss\n"
+        "📐 Resize — change resolution according to your needs\n"
+        "🧩 Split — divide pictures into equal grid parts\n"
+        "🔄 Convert — switch between JPG, PNG, and WEBP\n"
+        "✂️ Crop — trim image to custom aspect ratios\n"
+        "🧹 Clean EXIF — remove hidden metadata for privacy\n"
+        "🔄 Rotate — adjust photo orientation instantly"
+    ),
+    3: (
+        "💡 How to Use (3/3)\n\n"
+        "1. Simply attach and send any photo into this chat.\n"
+        "2. Choose your desired action from the interactive menu.\n"
+        "3. Download your freshly processed file!\n\n"
+        "📩 For support or feedback, contact: @vanishedhunter"
+    )
+}
+
+
+@dp.message(CommandStart())
+async def start(message: Message):
+    await message.answer(
+        START_PAGES[1],
+        reply_markup=start_page_keyboard(1)
+    )
+
+
+@dp.callback_query(F.data.startswith("start_page_"))
+async def process_start_page(callback: CallbackQuery):
+    page = int(callback.data.split("_")[2])
+    
+    await callback.message.edit_text(
+        START_PAGES[page],
+        reply_markup=start_page_keyboard(page)
+    )
+    await callback.answer()
+
+
+@dp.message(Command("help"))
+async def help_command(message: Message):
+    await message.answer(
+        START_PAGES[2],
+        reply_markup=start_page_keyboard(2)
+    )
+# =========================================================
 # IMAGE HELPERS
 # =========================================================
 
@@ -147,130 +212,43 @@ def get_image(user_id: int):
         image = Image.open(
             io.BytesIO(images[user_id])
         )
-
-        # Load image into memory
         image.load()
-
         return image
-
     except Exception:
         return None
 
 
-def image_to_bytes(
-    image: Image.Image,
-    fmt="PNG",
-    quality=90
-):
+def image_to_bytes(image: Image.Image, fmt="PNG", quality=90):
     output = io.BytesIO()
-
     fmt = fmt.upper()
 
     if fmt in ("JPG", "JPEG"):
-
         if image.mode not in ("RGB", "L"):
-
             if "A" in image.getbands():
-
-                background = Image.new(
-                    "RGB",
-                    image.size,
-                    "white"
-                )
-
-                background.paste(
-                    image,
-                    mask=image.getchannel("A")
-                )
-
+                background = Image.new("RGB", image.size, "white")
+                background.paste(image, mask=image.getchannel("A"))
                 image = background
-
             else:
                 image = image.convert("RGB")
 
-        image.save(
-            output,
-            format="JPEG",
-            quality=quality,
-            optimize=True
-        )
+        image.save(output, format="JPEG", quality=quality, optimize=True)
 
     elif fmt == "WEBP":
-
-        if image.mode not in (
-            "RGB",
-            "RGBA"
-        ):
+        if image.mode not in ("RGB", "RGBA"):
             image = image.convert("RGBA")
 
-        image.save(
-            output,
-            format="WEBP",
-            quality=quality,
-            method=6
-        )
+        image.save(output, format="WEBP", quality=quality, method=6)
 
     else:
-
-        image.save(
-            output,
-            format=fmt
-        )
+        image.save(output, format=fmt)
 
     output.seek(0)
-
     return output.read()
 
 
-async def send_image(
-    message: Message,
-    data: bytes,
-    filename: str
-):
+async def send_image(message: Message, data: bytes, filename: str):
     await message.answer_document(
-        BufferedInputFile(
-            data,
-            filename=filename
-        )
-    )
-
-
-def image_exists(user_id: int):
-    return user_id in images
-
-
-# =========================================================
-# START
-# =========================================================
-
-@dp.message(CommandStart())
-async def start(message: Message):
-
-    await message.answer(
-        "✨ Welcome! This is IMGFORCE — your handy toolkit for quick image processing in Telegram.\n\n"
-        "📥 Send me a picture or photo, then choose the desired operation below:",
-        reply_markup=main_keyboard()
-    )
-
-
-# =========================================================
-# HELP
-# =========================================================
-
-@dp.message(Command("help"))
-async def help_command(message: Message):
-
-    await message.answer(
-        "🛠 Available IMGFORCE tools:\n\n"
-        "⚡️ Compress — reduce file size\n"
-        "📐 Resize — change resolution\n"
-        "🧩 Split — divide image into parts\n"
-        "🔄 Convert — JPG / PNG / WEBP formats\n"
-        "✂️ Crop — crop by aspect ratio\n"
-        "ℹ️ Info — detailed file details\n"
-        "🧹 Clean EXIF — remove metadata\n"
-        "🔄 Rotate — rotate image orientation\n\n"
-        "Simply send a photo to begin!"
+        BufferedInputFile(data, filename=filename)
     )
 
 
@@ -280,48 +258,30 @@ async def help_command(message: Message):
 
 @dp.message(F.photo)
 async def receive_photo(message: Message):
-
     photo = message.photo[-1]
 
     try:
+        file = await bot.get_file(photo.file_id)
+        data = await bot.download_file(file.file_path)
 
-        file = await bot.get_file(
-            photo.file_id
-        )
-
-        data = await bot.download_file(
-            file.file_path
-        )
-
-        images[
-            message.from_user.id
-        ] = data.getvalue()
-
-        image = get_image(
-            message.from_user.id
-        )
+        images[message.from_user.id] = data.getvalue()
+        image = get_image(message.from_user.id)
 
         if image is None:
-            await message.answer(
-                "❌ Failed to process this image."
-            )
+            await message.answer("❌ Failed to process this image.")
             return
 
         await message.answer(
             "✅ Photo uploaded successfully!\n\n"
-            f"• Resolution: {image.width} × {image.height}\n"
+            f"• Dimensions: {image.width} × {image.height} px\n"
             f"• Format: {image.format}\n\n"
-            "Choose what you want to do with the photo:",
+            "Select an operation below:",
             reply_markup=main_keyboard()
         )
 
     except Exception as e:
-
         logging.exception(e)
-
-        await message.answer(
-            "❌ Error downloading the photo."
-        )
+        await message.answer("❌ Error downloading the photo.")
 
 
 # =========================================================
@@ -329,39 +289,27 @@ async def receive_photo(message: Message):
 # =========================================================
 
 @dp.callback_query(F.data == "info")
-async def image_info(
-    callback: CallbackQuery
-):
-
+async def image_info(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
-    size_kb = (
-        len(images[user_id])
-        / 1024
-    )
-
+    size_kb = len(images[user_id]) / 1024
     ratio = image.width / image.height
 
     await callback.message.answer(
-        "📊 Image Information:\n\n"
-        f"• Format: {image.format}\n"
-        f"• Resolution: {image.width} × {image.height}\n"
-        f"• Color Mode: {image.mode}\n"
-        f"• File Size: {size_kb:.2f} KB\n"
-        f"• Aspect Ratio: {ratio:.2f}"
+        "📊 Image Details:\n\n"
+        "👤 Owner: @vanishedhunter\n"
+        f"⚙️ Format: {image.format}\n"
+        f"📐 Dimensions: {image.width} × {image.height} px\n"
+        f"🎨 Color Mode: {image.mode}\n"
+        f"💾 File Size: {size_kb:.2f} KB\n"
+        f"🖼 Aspect Ratio: {ratio:.2f}\n\n"
+        "Need to process another image? Simply send a new photo!"
     )
-
     await callback.answer()
 
 
@@ -370,83 +318,39 @@ async def image_info(
 # =========================================================
 
 @dp.callback_query(F.data == "compress")
-async def compress_menu(
-    callback: CallbackQuery
-):
-
+async def compress_menu(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="High (85%)",
-                    callback_data="compress_85"
-                ),
-                InlineKeyboardButton(
-                    text="Medium (60%)",
-                    callback_data="compress_60"
-                ),
-                InlineKeyboardButton(
-                    text="Low (40%)",
-                    callback_data="compress_40"
-                ),
+                InlineKeyboardButton(text="High (85%)", callback_data="compress_85"),
+                InlineKeyboardButton(text="Medium (60%)", callback_data="compress_60"),
+                InlineKeyboardButton(text="Low (40%)", callback_data="compress_40"),
             ],
-            [
-                InlineKeyboardButton(
-                    text="◀️ Back",
-                    callback_data="back"
-                )
-            ]
+            [InlineKeyboardButton(text="◀️ Back", callback_data="back")]
         ]
     )
 
     await callback.message.answer(
-        "⚡️ Compression Settings\n\n"
-        "Choose your preferred compression level:",
+        "⚡️ Compression Settings\n\nChoose compression level:",
         reply_markup=keyboard
     )
-
     await callback.answer()
 
 
-@dp.callback_query(
-    F.data.startswith("compress_")
-)
-async def compress_image(
-    callback: CallbackQuery
-):
-
+@dp.callback_query(F.data.startswith("compress_"))
+async def compress_image(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
-    quality = int(
-        callback.data.split("_")[1]
-    )
+    quality = int(callback.data.split("_")[1])
+    data = image_to_bytes(image, "JPEG", quality)
 
-    data = image_to_bytes(
-        image,
-        "JPEG",
-        quality
-    )
-
-    await send_image(
-        callback.message,
-        data,
-        f"compressed_{quality}.jpg"
-    )
-
-    await callback.answer(
-        "Done! Image compressed."
-    )
+    await send_image(callback.message, data, f"compressed_{quality}.jpg")
+    await callback.answer("Done! Image compressed.")
 
 
 # =========================================================
@@ -454,107 +358,47 @@ async def compress_image(
 # =========================================================
 
 @dp.callback_query(F.data == "resize")
-async def resize_menu(
-    callback: CallbackQuery
-):
-
+async def resize_menu(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="1920 px",
-                    callback_data="resize_1920"
-                ),
-                InlineKeyboardButton(
-                    text="1280 px",
-                    callback_data="resize_1280"
-                ),
+                InlineKeyboardButton(text="1920 px", callback_data="resize_1920"),
+                InlineKeyboardButton(text="1280 px", callback_data="resize_1280"),
             ],
             [
-                InlineKeyboardButton(
-                    text="720 px",
-                    callback_data="resize_720"
-                ),
-                InlineKeyboardButton(
-                    text="500 px",
-                    callback_data="resize_500"
-                ),
+                InlineKeyboardButton(text="720 px", callback_data="resize_720"),
+                InlineKeyboardButton(text="500 px", callback_data="resize_500"),
             ],
-            [
-                InlineKeyboardButton(
-                    text="◀️ Back",
-                    callback_data="back"
-                )
-            ]
+            [InlineKeyboardButton(text="◀️ Back", callback_data="back")]
         ]
     )
 
     await callback.message.answer(
-        "📐 Resize Image\n\n"
-        "Choose maximum width constraint:",
+        "📐 Resize Image\n\nChoose target maximum width:",
         reply_markup=keyboard
     )
-
     await callback.answer()
 
 
-@dp.callback_query(
-    F.data.startswith("resize_")
-)
-async def resize_image(
-    callback: CallbackQuery
-):
-
+@dp.callback_query(F.data.startswith("resize_"))
+async def resize_image(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
-    max_width = int(
-        callback.data.split("_")[1]
-    )
+    max_width = int(callback.data.split("_")[1])
 
     if image.width > max_width:
+        ratio = max_width / image.width
+        new_height = int(image.height * ratio)
+        image = image.resize((max_width, new_height), Image.Resampling.LANCZOS)
 
-        ratio = (
-            max_width
-            / image.width
-        )
-
-        new_height = int(
-            image.height * ratio
-        )
-
-        image = image.resize(
-            (
-                max_width,
-                new_height
-            ),
-            Image.Resampling.LANCZOS
-        )
-
-    data = image_to_bytes(
-        image,
-        "PNG"
-    )
-
-    await send_image(
-        callback.message,
-        data,
-        f"resized_{image.width}x{image.height}.png"
-    )
-
-    await callback.answer(
-        "Done! Image resized."
-    )
+    data = image_to_bytes(image, "PNG")
+    await send_image(callback.message, data, f"resized_{image.width}x{image.height}.png")
+    await callback.answer("Done! Image resized.")
 
 
 # =========================================================
@@ -562,92 +406,48 @@ async def resize_image(
 # =========================================================
 
 @dp.callback_query(F.data == "split")
-async def split_menu(
-    callback: CallbackQuery
-):
-
+async def split_menu(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="2 parts",
-                    callback_data="split_2"
-                ),
-                InlineKeyboardButton(
-                    text="3 parts",
-                    callback_data="split_3"
-                ),
+                InlineKeyboardButton(text="2 parts", callback_data="split_2"),
+                InlineKeyboardButton(text="3 parts", callback_data="split_3"),
             ],
             [
-                InlineKeyboardButton(
-                    text="4 parts (2x2)",
-                    callback_data="split_4"
-                ),
-                InlineKeyboardButton(
-                    text="6 parts (3x2)",
-                    callback_data="split_6"
-                ),
+                InlineKeyboardButton(text="4 parts (2x2)", callback_data="split_4"),
+                InlineKeyboardButton(text="6 parts (3x2)", callback_data="split_6"),
             ],
-            [
-                InlineKeyboardButton(
-                    text="9 parts (3x3)",
-                    callback_data="split_9"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="◀️ Back",
-                    callback_data="back"
-                )
-            ]
+            [InlineKeyboardButton(text="9 parts (3x3)", callback_data="split_9")],
+            [InlineKeyboardButton(text="◀️ Back", callback_data="back")]
         ]
     )
 
     await callback.message.answer(
-        "🧩 Split Image\n\n"
-        "Choose number of equal parts:",
+        "🧩 Split Image\n\nChoose grid division:",
         reply_markup=keyboard
     )
-
     await callback.answer()
 
 
-@dp.callback_query(
-    F.data.startswith("split_")
-)
-async def split_image(
-    callback: CallbackQuery
-):
-
+@dp.callback_query(F.data.startswith("split_"))
+async def split_image(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
-    count = int(
-        callback.data.split("_")[1]
-    )
+    count = int(callback.data.split("_")[1])
 
     if count in (2, 3):
-        columns = count
-        rows = 1
+        columns, rows = count, 1
     elif count == 4:
-        columns = 2
-        rows = 2
+        columns, rows = 2, 2
     elif count == 6:
-        columns = 3
-        rows = 2
+        columns, rows = 3, 2
     else:
-        columns = 3
-        rows = 3
+        columns, rows = 3, 3
 
     width, height = image.size
 
@@ -662,15 +462,9 @@ async def split_image(
             data = image_to_bytes(part, "PNG")
             number = row * columns + column + 1
 
-            await send_image(
-                callback.message,
-                data,
-                f"part_{number}.png"
-            )
+            await send_image(callback.message, data, f"part_{number}.png")
 
-    await callback.answer(
-        "Done! Image split."
-    )
+    await callback.answer("Done! Image split.")
 
 
 # =========================================================
@@ -678,82 +472,40 @@ async def split_image(
 # =========================================================
 
 @dp.callback_query(F.data == "convert")
-async def convert_menu(
-    callback: CallbackQuery
-):
-
+async def convert_menu(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="JPG",
-                    callback_data="convert_JPEG"
-                ),
-                InlineKeyboardButton(
-                    text="PNG",
-                    callback_data="convert_PNG"
-                ),
-                InlineKeyboardButton(
-                    text="WEBP",
-                    callback_data="convert_WEBP"
-                ),
+                InlineKeyboardButton(text="JPG", callback_data="convert_JPEG"),
+                InlineKeyboardButton(text="PNG", callback_data="convert_PNG"),
+                InlineKeyboardButton(text="WEBP", callback_data="convert_WEBP"),
             ],
-            [
-                InlineKeyboardButton(
-                    text="◀️ Back",
-                    callback_data="back"
-                )
-            ]
+            [InlineKeyboardButton(text="◀️ Back", callback_data="back")]
         ]
     )
 
     await callback.message.answer(
-        "🔄 Convert Format\n\n"
-        "Choose target format:",
+        "🔄 Convert Format\n\nChoose output format:",
         reply_markup=keyboard
     )
-
     await callback.answer()
 
 
-@dp.callback_query(
-    F.data.startswith("convert_")
-)
-async def convert_image(
-    callback: CallbackQuery
-):
-
+@dp.callback_query(F.data.startswith("convert_"))
+async def convert_image(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
     fmt = callback.data.split("_")[1]
-
-    data = image_to_bytes(
-        image,
-        fmt
-    )
-
+    data = image_to_bytes(image, fmt)
     extension = fmt.lower()
 
-    await send_image(
-        callback.message,
-        data,
-        f"converted.{extension}"
-    )
-
-    await callback.answer(
-        "Done! Format converted."
-    )
+    await send_image(callback.message, data, f"converted.{extension}")
+    await callback.answer("Done! Format converted.")
 
 
 # =========================================================
@@ -761,76 +513,39 @@ async def convert_image(
 # =========================================================
 
 @dp.callback_query(F.data == "crop")
-async def crop_menu(
-    callback: CallbackQuery
-):
-
+async def crop_menu(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="1:1 (Square)",
-                    callback_data="crop_1_1"
-                ),
-                InlineKeyboardButton(
-                    text="4:3",
-                    callback_data="crop_4_3"
-                ),
+                InlineKeyboardButton(text="1:1 (Square)", callback_data="crop_1_1"),
+                InlineKeyboardButton(text="4:3", callback_data="crop_4_3"),
             ],
             [
-                InlineKeyboardButton(
-                    text="16:9",
-                    callback_data="crop_16_9"
-                ),
-                InlineKeyboardButton(
-                    text="9:16 (Story)",
-                    callback_data="crop_9_16"
-                ),
+                InlineKeyboardButton(text="16:9", callback_data="crop_16_9"),
+                InlineKeyboardButton(text="9:16 (Story)", callback_data="crop_9_16"),
             ],
-            [
-                InlineKeyboardButton(
-                    text="◀️ Back",
-                    callback_data="back"
-                )
-            ]
+            [InlineKeyboardButton(text="◀️ Back", callback_data="back")]
         ]
     )
 
     await callback.message.answer(
-        "✂️ Crop Image\n\n"
-        "Choose aspect ratio:",
+        "✂️ Crop Image\n\nSelect aspect ratio:",
         reply_markup=keyboard
     )
-
     await callback.answer()
 
 
-@dp.callback_query(
-    F.data.startswith("crop_")
-)
-async def crop_image(
-    callback: CallbackQuery
-):
-
+@dp.callback_query(F.data.startswith("crop_"))
+async def crop_image(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
-    _, ratio_w, ratio_h = (
-        callback.data.split("_")
-    )
-
-    ratio_w = int(ratio_w)
-    ratio_h = int(ratio_h)
+    _, ratio_w, ratio_h = callback.data.split("_")
+    ratio_w, ratio_h = int(ratio_w), int(ratio_h)
 
     target_ratio = ratio_w / ratio_h
     current_ratio = image.width / image.height
@@ -847,15 +562,8 @@ async def crop_image(
     cropped = image.crop(box)
     data = image_to_bytes(cropped, "PNG")
 
-    await send_image(
-        callback.message,
-        data,
-        f"crop_{ratio_w}x{ratio_h}.png"
-    )
-
-    await callback.answer(
-        "Done! Image cropped."
-    )
+    await send_image(callback.message, data, f"crop_{ratio_w}x{ratio_h}.png")
+    await callback.answer("Done! Image cropped.")
 
 
 # =========================================================
@@ -863,21 +571,12 @@ async def crop_image(
 # =========================================================
 
 @dp.callback_query(F.data == "exif")
-async def remove_exif(
-    callback: CallbackQuery
-):
-
+async def remove_exif(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
     data = image_to_bytes(
@@ -885,128 +584,62 @@ async def remove_exif(
         "JPEG" if image.format in ("JPEG", "JPG") else "PNG"
     )
 
-    await send_image(
-        callback.message,
-        data,
-        "clean_image.jpg"
-    )
-
-    await callback.answer(
-        "Done! Metadata removed."
-    )
+    await send_image(callback.message, data, "clean_image.jpg")
+    await callback.answer("Done! Metadata removed.")
 
 
 @dp.callback_query(F.data == "rotate")
-async def rotate_menu(
-    callback: CallbackQuery
-):
-
+async def rotate_menu(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(
-                    text="90° Clockwise",
-                    callback_data="rot_270"
-                ),
-                InlineKeyboardButton(
-                    text="90° Counter-clockwise",
-                    callback_data="rot_90"
-                ),
+                InlineKeyboardButton(text="90° Clockwise", callback_data="rot_270"),
+                InlineKeyboardButton(text="90° Counter-clockwise", callback_data="rot_90"),
             ],
-            [
-                          InlineKeyboardButton(
-                    text="180°",
-                    callback_data="rot_180"
-                ),
-            ],
-            [
-                InlineKeyboardButton(
-                    text="◀️ Back",
-                    callback_data="back"
-                )
-            ]
+            [InlineKeyboardButton(text="180°", callback_data="rot_180")],
+            [InlineKeyboardButton(text="◀️ Back", callback_data="back")]
         ]
     )
 
     await callback.message.answer(
-        "🔄 Rotate Image\n\n"
-        "Choose rotation angle:",
+        "🔄 Rotate Image\n\nChoose rotation angle:",
         reply_markup=keyboard
     )
-
     await callback.answer()
 
 
-@dp.callback_query(
-    F.data.startswith("rot_")
-)
-async def rotate_image(
-    callback: CallbackQuery
-):
-
+@dp.callback_query(F.data.startswith("rot_"))
+async def rotate_image(callback: CallbackQuery):
     user_id = callback.from_user.id
-
     image = get_image(user_id)
 
     if image is None:
-
-        await callback.answer(
-            "Please send a photo first!",
-            show_alert=True
-        )
-
+        await callback.answer("Please send a photo first!", show_alert=True)
         return
 
-    degrees = int(
-        callback.data.split("_")[1]
-    )
+    degrees = int(callback.data.split("_")[1])
+    rotated = image.rotate(degrees, expand=True)
+    data = image_to_bytes(rotated, "PNG")
 
-    rotated = image.rotate(
-        degrees,
-        expand=True
-    )
+    await send_image(callback.message, data, "rotated.png")
+    await callback.answer("Done! Image rotated.")
 
-    data = image_to_bytes(
-        rotated,
-        "PNG"
-    )
 
-    await send_image(
-        callback.message,
-        data,
-        "rotated.png"
-    )
-
-    await callback.answer(
-        "Done! Image rotated."
-    )
 # =========================================================
-# BACK
+# BACK & UNKNOWN MESSAGES
 # =========================================================
 
 @dp.callback_query(F.data == "back")
-async def back(
-    callback: CallbackQuery
-):
-
+async def back(callback: CallbackQuery):
     await callback.message.answer(
-        "✨ IMGFORCE Main Menu.\n\n"
-        "Choose an operation:",
+        "✨ IMGFORCE Main Menu.\n\nSelect an operation:",
         reply_markup=main_keyboard()
     )
-
     await callback.answer()
 
 
-# =========================================================
-# UNKNOWN MESSAGE
-# =========================================================
-
 @dp.message()
-async def unknown_message(
-    message: Message
-):
-
+async def unknown_message(message: Message):
     await message.answer(
         "👋 Please send me a photo to start working.",
         reply_markup=main_keyboard()
@@ -1018,21 +651,11 @@ async def unknown_message(
 # =========================================================
 
 async def main():
-
-    logging.info(
-        "IMGFORCE bot started"
-    )
-
+    logging.info("IMGFORCE bot started")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-
-    web_thread = threading.Thread(
-        target=run_web,
-        daemon=True
-    )
-
+    web_thread = threading.Thread(target=run_web, daemon=True)
     web_thread.start()
-
     asyncio.run(main())
